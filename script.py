@@ -23,8 +23,7 @@ import shutil
 from enum import Enum
 from pathlib import Path
 from argparse import ArgumentParser
-from os import chdir, listdir, stat
-from sys import exit
+from os import chdir
 
 # Environmental Variables
 
@@ -44,31 +43,7 @@ tid = ''                                          # Teamdrive root id
 
 fid = ''                                          # Google drive download location id in teamDrive
 
-cf = ''                                           # Index url (Remember to add trail '/' at end)
-
-Horrible_1080 = ''                                # folder id of horrible 1080p folder
-
-Horrible_1080_foldername = ''                     # folder name of horrible 1080p folder
-
-Horrible_720 = ''                                 # folder id of horrible 720p folder
-
-Horrible_720_foldername = ''                      # Folder name of horrible 720p folder
-
-Horrible_misc = ''                                # folder id of horrible misc folder
-
-Horrible_misc_foldername = ''                     # folder name of horrible misc folder
-
-Erai_1080 = ''                                    # folder id Erai 1080p folder
-
-Erai_1080_foldername = ''                         # Folder name erai 1080p folder
-
-Erai_720 = ''                                     # Folder id of erai 720p folder
-
-Erai_720_foldername = ''                          # Folder name of erai 720 folder
-
-Erai_misc = ''                                    # Folder id of miscellaneous folder
-
-Erai_misc_foldername = ''                         # Folder name of miscellaneous folder
+cf = ''                                           # Index (Remember to add trail '/')
 
 tgchat_id = ''                                    # tg chat id
 
@@ -81,7 +56,7 @@ trans_pass = ''                                   # transmissionrpc pass
 
 
 
-#Experimental stuff
+# classifies anime episodes based on encoder, resolution, anime name and episode number
 
 class Episode:
     def __init__(self, name):
@@ -93,7 +68,7 @@ class Episode:
     def get_encoder(self, name):
         for encoder in Encoder:
             if encoder.value in name:
-                return encoder
+                return encoder.value
     def resolution(self):
         # Special handling for commie and gjm
         if self.encoder() == Encoder.Commie or self.encoder() == Encoder.GJM:
@@ -103,7 +78,7 @@ class Episode:
     def get_resolution(self, name):
         for res in Resolution:
             if res.value in name:
-                return res
+                return res.value
 
     def episode(self):
         return int(self.name.rsplit('-', 1)[1].split('[')[0].strip())
@@ -114,7 +89,7 @@ class Episode:
 
 class Encoder(Enum):
     HorribleSubs = '[HorribleSubs]'
-    EraiRaws = '[EraiRaws]'
+    EraiRaws = '[Erai-Raws]'
     Commie = '[Commie]'
     GJM = '[GJM]'
 
@@ -122,9 +97,6 @@ class Resolution(Enum):
     Res1080p = '1080p'
     Res720p = '720p'
     Res480p = '480p'
-
-
-
 
 
 # Function to get existing folder id
@@ -140,18 +112,18 @@ def get_folder_id(drive, parent_folder_id, src_folder_name):
             'includeTeamDriveItems': True,
             'supportsTeamDrives': True}
 		).GetList()
-	# Exit if the parent folder doesn't exist
+# Exit if the parent folder doesn't exist
     except googleapiclient.errors.HttpError as err:
-		# Parse error message
+# Parse error message
         message = ast.literal_eval(err.content)['error']['message']
         if message == 'File not found: ':
             print(message + src_folder_name)
             exit(1)
-		# Exit with stacktrace in case of other error
+# Exit with stacktrace in case of other error
         else:
             raise
 
-	# Find the the destination folder in the parent folder's files
+# Find the the destination folder in the parent folder's files
     for file1 in file_list:
         if file1['title'] == src_folder_name:
             print('title: %s, id: %s' % (file1['title'], file1['id']))
@@ -173,7 +145,6 @@ def create_folder(drive, src_folder_name, parent_folder_id):
 
     #print('title: %s, id: %s' % (folder['title'], folder['id'])
     return folder['id']
-
 
 
 
@@ -223,7 +194,6 @@ def single_file_size(path):
 
 
 
-
 # Function to check size of multiple files using recursive algorithm
 
 def recursive_dir_size(path):
@@ -239,8 +209,7 @@ def recursive_dir_size(path):
 
 
 
-
-    # I kanged this from StackOverflow because it was perfect for my use case,  It divides the bytes into multiple of 1024 to get megabytes, gigabytes and so on..
+# I kanged this from StackOverflow because it was perfect for my use case,  It divides the bytes into multiple of 1024 to get megabytes, gigabytes and so on..
 
 
 def humanized_size(num, suffix='B', si=False):
@@ -273,57 +242,10 @@ def remove(path):
         raise ValueError("file {} is not a file or dir.".format(path))
 
 
-
-
-# A very shitty algorithm for filtering Horrible and Erai torrents
-def string_check(string):
-    if "Erai-raws" in string:
-        if "720p" in string:
-            url = f"{cf}{Erai_720_foldername}/"
-            return Erai_720, url;
-
-        elif "1080p" in string:
-                url = f"{cf}{Erai_1080_foldername}/"
-                return Erai_1080, url;
-
-        else:
-            url = f"{cf}{Erai_misc_foldername}/"
-            return Erai_misc, url;
-
-    elif "HorribleSubs" in string:
-            if "720p" in string:
-                url = f"{cf}{Horrible_720_foldername}/"
-                return Horrible_720, url;
-
-            elif "1080p" in string:
-                    url = f"{cf}{Horrible_1080_foldername}/"
-                    return Horrible_1080, url;
-
-            else:
-                url = f"{cf}{Horrible_misc_foldername}/"
-                return Horrible_misc, url;
-
-    else:
-        return fid, cf;
-
-
-
-
-# Index_url generation
-
-cont1 = string_check(file_name)
-cf = cont1[1]
-index_url = f"{cf}{file_name}"
-if os.path.isdir(file_location):
-    index_url+= '/'
-index_link = {urllib.parse.quote(index_url)}
-
-
-
-
 # I dont know how to use telegram bot api yet, so using this hack
 
 def telegram_bot_sendtext(bot_message, tg_chat_id, token):
+
     bot_token = token
     bot_chatID = tg_chat_id
     send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=HTML&text=' + bot_message
@@ -333,42 +255,53 @@ def telegram_bot_sendtext(bot_message, tg_chat_id, token):
     return response.json()
 
 
+def get_series_id(drive, fid, series_name, series_encoder, series_resoultion):
+    name_id = get_folder_id(drive, fid, series_name)
+    if not name_id:
+            name_id = create_folder(drive, series_name, fid)
+    encoder_id =  get_folder_id(drive, name_id, series_encoder)
+    if not encoder_id:
+            encoder_id = create_folder(drive, series_encoder, name_id)
+    resol_id = get_folder_id(drive, encoder_id, series_resoultion)
+    if not resol_id:
+            resol_id = create_folder(drive, series_resoultion, encoder_id)
+    return resol_id
 
 
 def main():
-
     src_folder_name = file_name
     src_folder_location = file_location
     dst_folder_name = file_name
-    scheck = string_check(dst_folder_name)
-    parent_folder_id = scheck[0]
+    parent_folder_id = fid
     gauth = GoogleAuth()
     gauth.CommandLineAuth()
     drive = GoogleDrive(gauth)
-    transmission = transmissionrpc.Client('localhost', port=9091, user=trans_user, password=trans_pass)     # Connecting to transmissionrpc
-    transmission.remove_torrent(torrent_id)   # removing the torrent from transmission Client
-
-    # Performing upload based on file or dir
-
+    ep = Episode(src_folder_name)
+    ser_title = ep.anime()
+    ser_resol = ep.resolution()
+    ser_encoder = ep.encoder()
+    print(ser_encoder)
+    parent_folder_id = get_series_id(drive, fid, ser_title, ser_encoder, ser_resol)
+    index_url = f"{cf}{ser_title}/{ser_encoder}/{ser_resol}/{src_folder_name}"
+    if os.path.isdir(file_location):
+        index_url += '/'
+    transmission = transmissionrpc.Client('localhost', port=9091, user='smartass08', password='ramramram')
+    transmission.remove_torrent(torrent_id)
     if os.path.isfile(src_folder_location):
-        folder_id = fid
         upload_files(drive, parent_folder_id, src_folder_location)
-        id = get_folder_id(drive, parent_folder_id, src_folder_name)
+        id = get_folder_id(drive,  parent_folder_id, src_folder_name)
         gdrive_link = "https://drive.google.com/open?id=%s" % (id)
         print(gdrive_link)
         file_size = single_file_size(src_folder_location)
-
     else:
-        folder_id = create_folder(drive, dst_folder_name, parent_folder_id)   # Create folder identical to torrent's folder name
+        folder_id = create_folder(drive, dst_folder_name, parent_folder_id)
         print(folder_id)
-        folder_upload(drive, src_folder_name, folder_id, src_folder_location)  # Upload the files recursively into newly created folder
+        folder_upload(drive, src_folder_name, folder_id, src_folder_location)
         gdrive_link = "https://drive.google.com/open?id=%s" % (folder_id)
-        file_size = recursive_dir_size(src_folder_location)                    # get whole folder size
-
-    # getting readable size
+        file_size = recursive_dir_size(src_folder_location)
     size = humanized_size(file_size, si=True)
-    message= f"<b>{src_folder_name}</b> \n{size}  |  <a href='{urllib.parse.quote(index_url)}'>Mirror</a>  |  <a href='{gdrive_link}'>Drive</a>"   # edit this for your own usage
+    message= f"<b>{src_folder_name}</b> \n{size}  |  <a href='{urllib.parse.quote(index_url)}'>Mirror</a>  |  <a href='{gdrive_link}'>Drive</a>"
     telegram_bot_sendtext(message, tgchat_id, TOKEN)
-    remove(src_folder_location)  # Removing the file or folder as uploading is finished
+    remove(src_folder_location)
 if __name__ == "__main__":
             main()
