@@ -52,7 +52,8 @@ trans_user = ''                                   # transmissionrpc user
 trans_pass = ''                                   # transmissionrpc pass
 
 
-
+if not file_name.endswith(".mkv"):
+	sys.exit("Exiting because not a mkv file")
 
 
 
