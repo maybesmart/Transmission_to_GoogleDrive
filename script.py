@@ -54,6 +54,10 @@ trans_pass = ''                                   # transmissionrpc pass
 
 if not file_name.endswith(".mkv"):
 	sys.exit("Exiting because not a mkv file")
+	transmission = transmissionrpc.Client('localhost', port=9091, user=trans_user, password=trans_pass)
+    	transmission.remove_torrent(torrent_id)
+	remove(src_folder_location)
+	
 
 
 
@@ -286,7 +290,7 @@ def main():
     index_url = f"{cf}{ser_title}/{ser_encoder}/{ser_resol}/{src_folder_name}"
     if os.path.isdir(file_location):
         index_url += '/'
-    transmission = transmissionrpc.Client('localhost', port=9091, user='smartass08', password='ramramram')
+    transmission = transmissionrpc.Client('localhost', port=9091, user=trans_user, password=trans_pass)
     transmission.remove_torrent(torrent_id)
     if os.path.isfile(src_folder_location):
         upload_files(drive, parent_folder_id, src_folder_location)
